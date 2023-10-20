@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_onboarding/bloc/onboarding/onboarding_bloc.dart';
+import 'package:flutter_onboarding/bloc/timer/timer_cubit.dart';
 import 'package:flutter_onboarding/onboarding_screen.dart';
 
 void main() {
@@ -17,6 +18,9 @@ class MyApp extends StatelessWidget {
         providers: [
           BlocProvider<OnboardingBloc>(
             create: (BuildContext context) => OnboardingBloc(),
+          ),
+          BlocProvider<TimerCubit>(
+            create: (BuildContext context) => TimerCubit(),
           ),
         ],
         child: const OnBoardingScreen(),

@@ -6,7 +6,7 @@ part 'onboarding_event.dart';
 part 'onboarding_state.dart';
 
 class OnboardingBloc extends Bloc<OnboardingEvent, OnboardingState> {
-  OnboardingBloc() : super(OnboardingInitial()) {
+  OnboardingBloc() : super(OnboardingInitial(pageData: testData.first)) {
     on<OnboardingEvent>((event, emit) {
       if (event is ChangePageEvent) {
         emit(OnboardingInitial(pageIndex: event.newPageIndex, pageData: event.newPage));

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -10,6 +9,7 @@ import 'package:flutter_onboarding/UI/Base/indicator.dart';
 import 'package:flutter_onboarding/UI/Base/svg_button.dart';
 import 'package:flutter_onboarding/UI/Onboarding/onboarding.dart';
 import 'package:flutter_onboarding/bloc/onboarding/onboarding_bloc.dart';
+import 'package:flutter_onboarding/bloc/timer/timer_cubit.dart';
 
 class OnBoardingScreen extends StatefulWidget {
   const OnBoardingScreen({Key? key}) : super(key: key);
@@ -21,8 +21,6 @@ class OnBoardingScreen extends StatefulWidget {
 class _OnBoardingScreenState extends State<OnBoardingScreen> with SingleTickerProviderStateMixin {
   final _initialPageIndex = 0;
   late PageController _pageController;
-  // int _pageIndex = 0;
-  Timer? _timer;
 
   late final fadeAnimationController = AnimationController(
     vsync: this,
@@ -34,29 +32,17 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> with SingleTickerPr
   void initState() {
     super.initState();
 
+    _pageController = PageController(initialPage: _initialPageIndex);
+
     BlocProvider.of<OnboardingBloc>(context)
         .add(ChangePageEvent(newPage: testData.first, newPageIndex: _initialPageIndex));
 
-    _pageController = PageController(initialPage: _initialPageIndex);
-    // _timer = Timer.periodic(const Duration(seconds: 7), (timer) {
-    //   if (_pageIndex < testData.length) {
-    //     _pageIndex++;
-    //   } else {
-    //     // закрыть приложение
-    //     exit(0);
-    //   }
-
-    //   _pageController.animateToPage(
-    //     _pageIndex,
-    //     duration: const Duration(milliseconds: 350),
-    //     curve: Curves.easeInOut,
-    //   );
-    // });
+    BlocProvider.of<TimerCubit>(context).startTimer();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    BlocProvider.of<TimerCubit>(context).stopTimer();
     _pageController.dispose();
     fadeAnimationController.dispose();
     super.dispose();
@@ -71,22 +57,47 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> with SingleTickerPr
           case OnboardingInitial():
             return Scaffold(
               body: GestureDetector(
-                onTapDown: (details) {
-                  print(details.globalPosition.dx);
-                },
-                onPanUpdate: (details) {
-                  // Swiping in right direction.
-                  if (details.delta.dx < 0 && state.pageIndex != testData.length - 1) {
+                onTapDown: (details) async {
+                  final width = MediaQuery.of(context).size.width;
+
+                  if (details.globalPosition.dx < width / 5 && state.pageIndex > 0) {
                     fadeAnimationController.forward();
-                    _pageController.nextPage(
+                    await _pageController.previousPage(
                       duration: const Duration(milliseconds: 350),
                       curve: Curves.easeInOut,
                     );
                   }
+
+                  if (details.globalPosition.dx > width - width / 5) {
+                    if (state.pageIndex != testData.length - 1) {
+                      fadeAnimationController.forward();
+                      await _pageController.nextPage(
+                        duration: const Duration(milliseconds: 350),
+                        curve: Curves.easeInOut,
+                      );
+                    } else {
+                      exit(0);
+                    }
+                  }
+                },
+                onPanUpdate: (details) async {
+                  // Swiping in right direction.
+                  if (details.delta.dx < 0) {
+                    if (state.pageIndex != testData.length - 1) {
+                      fadeAnimationController.forward();
+                      await _pageController.nextPage(
+                        duration: const Duration(milliseconds: 350),
+                        curve: Curves.easeInOut,
+                      );
+                    } else {
+                      exit(0);
+                    }
+                  }
+
                   // Swiping in left direction.
                   if (details.delta.dx > 0 && state.pageIndex > 0) {
                     fadeAnimationController.forward();
-                    _pageController.previousPage(
+                    await _pageController.previousPage(
                       duration: const Duration(milliseconds: 350),
                       curve: Curves.easeInOut,
                     );
@@ -94,21 +105,27 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> with SingleTickerPr
                 },
                 onLongPressStart: (details) {
                   // pause timer
+                  BlocProvider.of<TimerCubit>(context).pauseTimer();
                 },
                 onLongPressEnd: (details) {
                   // start timer
+                  BlocProvider.of<TimerCubit>(context).startTimer();
                 },
-                child: Container(
-                  // TODO(Nelli): сделать анимацию DecoratedBoxTransition. Смена состояния через bloc
+                child: AnimatedContainer(
                   decoration: BoxDecoration(
-                    color: state.pageData?.bgColor,
                     gradient: state.pageData?.bgGradient,
                   ),
+                  duration: const Duration(milliseconds: 600),
+                  curve: Curves.easeInOut,
                   child: SafeArea(
                     child: Column(
                       children: [
                         const SizedBox(height: 4),
-                        _Header(pageIndex: state.pageIndex),
+                        _Header(
+                          pageIndex: state.pageIndex,
+                          animationController: fadeAnimationController,
+                          pageController: _pageController,
+                        ),
                         const SizedBox(height: 29),
                         Flexible(
                           child: ConstrainedBox(
@@ -118,10 +135,11 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> with SingleTickerPr
                               controller: _pageController,
                               itemCount: testData.length,
                               onPageChanged: (index) {
-                                // _pageIndex = index;
+                                fadeAnimationController.reverse();
                                 BlocProvider.of<OnboardingBloc>(context).add(
                                     ChangePageEvent(newPage: testData[index], newPageIndex: index));
-                                fadeAnimationController.reverse();
+                                BlocProvider.of<TimerCubit>(context)
+                                    .resetTimer(pageIndex: index.toDouble());
                               },
                               itemBuilder: (context, index) {
                                 return OnBoardingPage(item: testData[state.pageIndex]);
@@ -138,14 +156,16 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> with SingleTickerPr
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  BaseText(
-                                    text: state.pageData!.title,
-                                    baseTextStyle: BaseTextStyle.headline,
-                                  ),
-                                  const SizedBox(height: 13),
-                                  if (state.pageData?.description case String description)
-                                    BaseText(text: description),
-                                  const SizedBox(height: 10),
+                                  if (state.pageData case OnBoardingModel model) ...[
+                                    BaseText(
+                                      text: model.title,
+                                      baseTextStyle: BaseTextStyle.headline,
+                                    ),
+                                    const SizedBox(height: 13),
+                                    if (model.description case String description)
+                                      BaseText(text: description),
+                                    const SizedBox(height: 10),
+                                  ],
                                 ],
                               ),
                             ),
@@ -208,32 +228,62 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> with SingleTickerPr
 
 class _Header extends StatelessWidget {
   final int pageIndex;
-  const _Header({required this.pageIndex, Key? key}) : super(key: key);
+  final PageController pageController;
+  final AnimationController animationController;
+
+  const _Header({
+    required this.pageIndex,
+    required this.pageController,
+    required this.animationController,
+    Key? key,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(10.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-          // TODO(Nelli): привязать к кубиту
-          ...List.generate(testData.length, (index) {
-            return Expanded(
-                child: Padding(
-              padding: EdgeInsets.only(right: index < testData.length - 1 ? 4 : 0),
-              child: const Indicator(value: 0),
-            ));
-          }),
+    return BlocConsumer<TimerCubit, TimerState>(
+      listener: (context, state) async {
+        if (state is TimerStop) {
+          if (pageController.page == testData.length - 1 && context.mounted) {
+            BlocProvider.of<TimerCubit>(context).stopTimer();
+            exit(0);
+          }
 
-          // добавить кнопку
-          SvgButton(
-              asset: SvgIcons.close,
-              onTap: () {
-                exit(0);
+          animationController.forward();
+
+          await pageController.nextPage(
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeInOut,
+          );
+
+          if (context.mounted) {
+            BlocProvider.of<TimerCubit>(context).resetTimer(pageIndex: pageController.page!);
+          }
+        }
+      },
+      builder: (context, state) {
+        return Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              ...List.generate(testData.length, (index) {
+                return Expanded(
+                    child: Padding(
+                  padding: EdgeInsets.only(right: index < testData.length - 1 ? 4 : 0),
+                  child: state.pageIndex > index
+                      ? const Indicator(value: 1)
+                      : Indicator(value: state.pageIndex == index ? state.indicatorValue : 0),
+                ));
               }),
-        ],
-      ),
+              SvgButton(
+                  asset: SvgIcons.close,
+                  onTap: () {
+                    exit(0);
+                  }),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -11,6 +11,31 @@ class BaseColors {
   static const orange = Color(0xffff9b04);
   static const red = Color(0xfff85153);
   static const darkGrey = Color(0xff19191b);
+
+// Есть проблема при переходе между цветом и градиентом во флаттере
+// и это самое простое решение, но в работе я бы использовала этот пакет
+// https://pub.dev/packages/animated_box_decoration
+// либо разобралась с проблемой сама, если бы было больше времени
+  static const blueGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [blue, blue],
+  );
+  static const orangeGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [orange, orange],
+  );
+  static const redGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [red, red],
+  );
+  static const darkGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [darkGrey, darkGrey],
+  );
   static const greenGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,

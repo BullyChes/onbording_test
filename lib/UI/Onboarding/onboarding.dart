@@ -5,7 +5,6 @@ import 'package:flutter_onboarding/UI/Style/base_colors.dart';
 class OnBoardingModel {
   final String title, assetName;
   final String? description;
-  final Color? bgColor;
   final LinearGradient? bgGradient;
   final bool withActionButtons;
 
@@ -13,7 +12,6 @@ class OnBoardingModel {
     required this.title,
     required this.assetName,
     this.description,
-    this.bgColor,
     this.bgGradient,
     this.withActionButtons = true,
   });
@@ -23,7 +21,7 @@ final List<OnBoardingModel> testData = [
   OnBoardingModel(
     title: 'Нам важно ваше мнение! Оцените изменения в Simpler',
     assetName: Images.page1,
-    bgColor: BaseColors.blue,
+    bgGradient: BaseColors.blueGradient,
     withActionButtons: false,
   ),
   OnBoardingModel(
@@ -31,21 +29,21 @@ final List<OnBoardingModel> testData = [
     description:
         'Занимайтесь английским даже ночью или просто посмотрите как изменится ваш интерфейс!',
     assetName: Images.page2,
-    bgColor: BaseColors.darkGrey,
+    bgGradient: BaseColors.darkGradient,
   ),
   OnBoardingModel(
     title: 'Соревнуйтесь в рейтинге космонавтов',
     description:
         'Зарабатывайте очки и продвигайтесь к вершине! Займите место в ракете и изучите новые созвездия',
     assetName: Images.page3,
-    bgColor: BaseColors.orange,
+    bgGradient: BaseColors.orangeGradient,
   ),
   OnBoardingModel(
     title: 'Раскройте преступления и станьте комиссаром',
     description:
         'Обновлённые детективные истории дают вам новый опыт в расследовании детективных дел',
     assetName: Images.page4,
-    bgColor: BaseColors.red,
+    bgGradient: BaseColors.redGradient,
   ),
   OnBoardingModel(
     title: 'Тренируйте язык с помощью новых заданий',
@@ -70,8 +68,6 @@ class OnBoardingPage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Image.asset(
         item.assetName,
-        // width: 381,
-        // fit: BoxFit.fitWidth,
       ),
     );
   }
